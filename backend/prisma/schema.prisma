@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String             @id @default(uuid())
+  name         String
+  email        String             @unique
+  password     String
+  role         String             @default("RESIDENT") // "RESIDENT" or "ADMIN"
+  flatNumber   String?
+  phone        String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  complaints   Complaint[]
+  histories    ComplaintHistory[]
+  notices      Notice[]
+}
+
+model Complaint {
+  id           String             @id @default(uuid())
+  title        String
+  description  String
+  category     String             // Plumbing, Electrical, Carpentry, Lift, Common Area, Security, Cleaning, Other
+  flatNumber   String
+  photoUrl     String?
+  status       String             @default("OPEN") // "OPEN", "IN_PROGRESS", "RESOLVED"
+  priority     String             @default("MEDIUM") // "LOW", "MEDIUM", "HIGH"
+  residentId   String
+  resident     User               @relation(fields: [residentId], references: [id])
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  resolvedAt   DateTime?
+  history      ComplaintHistory[]
+}
+
+model ComplaintHistory {
+  id           String     @id @default(uuid())
+  complaintId  String
+  complaint    Complaint  @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  actorId      String
+  actor        User       @relation(fields: [actorId], references: [id])
+  fromStatus   String?
+  toStatus     String?
+  fromPriority String?
+  toPriority   String?
+  note         String?
+  action       String     // "CREATED", "STATUS_CHANGE", "PRIORITY_CHANGE", "NOTE_ADDED"
+  createdAt    DateTime   @default(now())
+}
+
+model Notice {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  category    String   @default("GENERAL") // GENERAL, MAINTENANCE, SECURITY, EVENT, EMERGENCY
+  isImportant Boolean  @default(false) // Pinned to the top
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Setting {
+  key         String   @id
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+}
